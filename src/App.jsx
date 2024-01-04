@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import Blog from './components/Blog'
 import Login from './components/Login'
 import Notification from './components/Notification'
+import Togglable from './components/Toggable'
 import blogService from './services/blogs'
 import loginService from './services/login'
 import CreateBlog from './components/CreateBlog'
@@ -12,11 +13,17 @@ const App = () => {
   const [password, setPassword] = useState('')
   const [user, setUser] = useState(null)
   const [message, setMessage] = useState(null)
-  const [title, setTitle] = useState('')
-  const [author, setAuthor] = useState('')
-  const [url, setUrl] = useState('')
 
 
+  function sortBlogs(blog) {
+    const sortedBlog = [...blog].sort((a, b) => b.likes - a.likes)
+    setBlogs(sortedBlog)
+  }
+
+  const fetchBlogs = async () => {
+    const blogs = await blogService.getAll()
+    return blogs
+  }
 
   useEffect(() => {
     const loggedUserJSON = window.localStorage.getItem('loggedBlogappUser')
@@ -32,10 +39,32 @@ const App = () => {
       return
     }
     blogService.setToken(user.token)
-    blogService.getAll().then(blogs =>
-      setBlogs(blogs)
-    )
-  }, [user])
+    fetchBlogs().then(fetchedBlogs => {
+      sortBlogs(fetchedBlogs)
+    })
+  }, [user]
+  )
+
+  const handleLike = (id) => {
+    const blog = blogs.find(blog => blog.id === id)
+    const updatedBlog = {
+      ...blog,
+      likes: blog.likes + 1
+    }
+    blogService.update(blog.id, updatedBlog)
+    setBlogs(blogs => blogs.map(b => b.id === blog.id ? updatedBlog : b))
+
+  }
+
+  const handleDelete = (id) => {
+    const blog = blogs.find(blog => blog.id === id)
+    if (window.confirm(`Remove blog ${blog.title} by ${blog.author}`)) {
+      blogService.deleteBlog(blog.id)
+      setBlogs(blogs => blogs.filter(b => b.id !== blog.id))
+    }
+  }
+
+
 
 
   const handleLogin = async (event) => {
@@ -59,30 +88,7 @@ const App = () => {
       }, 5000)
     }
   }
-  const handleCreateBlog = async (event) => {
-    event.preventDefault()
-    const blogObject = {
-      title: title,
-      author: author,
-      url: url,
-    }
-    try {
-      const blog = await blogService.create(blogObject)
-      setBlogs(blogs.concat(blog))
-      setMessage(`a new blog ${blog.title} by ${blog.author} added`)
-      setTimeout(() => {
-        setMessage(null)
-      }, 5000)
-      setTitle('')
-      setAuthor('')
-      setUrl('')
-    } catch (exception) {
-      setMessage('Wrong credentials')
-      setTimeout(() => {
-        setMessage(null)
-      }, 5000)
-    }
-  }
+
 
   const logOut = () => {
     window.localStorage.removeItem('loggedBlogappUser')
@@ -105,11 +111,23 @@ const App = () => {
         : <div>
           <p>{user.name} logged in</p>
           <button onClick={logOut}>logout</button>
-          <Notification message={message} />
-          <CreateBlog handleCreateBlog={handleCreateBlog} title={title} author={author} url={url} setTitle={setTitle} setAuthor={setAuthor} setUrl={setUrl} />
+          <Togglable buttonLabel='new blog'>
+            <CreateBlog
+              blogs={blogs}
+              blogService={blogService}
+              sortBlogs={sortBlogs}
+
+            />
+          </Togglable>
           <h2>blogs</h2>
           {blogs.map(blog =>
-            <Blog key={blog.id} blog={blog} />
+            <Blog
+              key={blog.id}
+              blog={blog}
+              user={user}
+              handleDelete={() => handleDelete(blog.id)}
+              handleLike={() => handleLike(blog.id)}
+            />
           )}
         </div>
       }
