@@ -25,6 +25,7 @@ const App = () => {
     return blogs
   }
 
+  //this useEffect is for checking if user is logged in
   useEffect(() => {
     const loggedUserJSON = window.localStorage.getItem('loggedBlogappUser')
     if (loggedUserJSON) {
@@ -34,6 +35,7 @@ const App = () => {
     }
   }, [])
 
+  //this useEffect is for fetching blogs
   useEffect(() => {
     if (user === null) {
       return
@@ -57,6 +59,7 @@ const App = () => {
   }
 
   const handleDelete = (id) => {
+
     const blog = blogs.find(blog => blog.id === id)
     if (window.confirm(`Remove blog ${blog.title} by ${blog.author}`)) {
       blogService.deleteBlog(blog.id)
@@ -89,6 +92,27 @@ const App = () => {
     }
   }
 
+  const handleCreateBlog = async (title, author, url) => {
+    const blogObject = {
+      title: title,
+      author: author,
+      url: url,
+    }
+    try {
+      const blog = await blogService.create(blogObject)
+      sortBlogs(blogs.concat(blog))
+      setMessage(`a new blog ${blog.title} by ${blog.author} added`)
+      setTimeout(() => {
+        setMessage(null)
+      }, 5000)
+    } catch (exception) {
+      setMessage('Wrong credentials')
+      setTimeout(() => {
+        setMessage(null)
+      }, 5000)
+    }
+  }
+
 
   const logOut = () => {
     window.localStorage.removeItem('loggedBlogappUser')
@@ -113,10 +137,7 @@ const App = () => {
           <button onClick={logOut}>logout</button>
           <Togglable buttonLabel='new blog'>
             <CreateBlog
-              blogs={blogs}
-              blogService={blogService}
-              sortBlogs={sortBlogs}
-
+              handleCreateBlog={handleCreateBlog}
             />
           </Togglable>
           <h2>blogs</h2>

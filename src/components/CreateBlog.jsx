@@ -1,51 +1,31 @@
 import React, { useState } from 'react'
-import Notification from './Notification'
 
 
-export default function CreateBlog({ sortBlogs, blogs, blogService }) {
+export default function CreateBlog({ handleCreateBlog }) {
     const [title, setTitle] = useState('')
     const [author, setAuthor] = useState('')
     const [url, setUrl] = useState('')
-    const [message, setMessage] = useState(null)
 
-    const handleCreateBlog = async (event) => {
+    const handleSubmit = (event) => {
         event.preventDefault()
-        const blogObject = {
-            title: title,
-            author: author,
-            url: url,
-        }
-        try {
-            const blog = await blogService.create(blogObject)
-            sortBlogs(blogs.concat(blog))
-            setMessage(`a new blog ${blog.title} by ${blog.author} added`)
-            setTimeout(() => {
-                setMessage(null)
-            }, 5000)
-            setTitle('')
-            setAuthor('')
-            setUrl('')
-        } catch (exception) {
-            setMessage('Wrong credentials')
-            setTimeout(() => {
-                setMessage(null)
-            }, 5000)
-        }
+        handleCreateBlog(title, author, url)
+        setTitle('')
+        setAuthor('')
+        setUrl('')
     }
-
-
 
     return (
         <div>
             <h2>Create new</h2>
-            <Notification message={message} />
-            <form onSubmit={handleCreateBlog}>
+            <form onSubmit={handleSubmit}>
                 <div>
                     title:
                     <input
                         type="text"
                         value={title}
                         name="Title"
+                        id="title"
+                        placeholder='write a title'
                         onChange={({ target }) => setTitle(target.value)}
                     />
                     <br />
@@ -54,6 +34,8 @@ export default function CreateBlog({ sortBlogs, blogs, blogService }) {
                         type="text"
                         value={author}
                         name="Author"
+                        id="author"
+                        placeholder='write an author'
                         onChange={({ target }) => setAuthor(target.value)}
                     />
                     <br />
@@ -62,10 +44,12 @@ export default function CreateBlog({ sortBlogs, blogs, blogService }) {
                         type="text"
                         value={url}
                         name="Url"
+                        id="url"
+                        placeholder='write an url'
                         onChange={({ target }) => setUrl(target.value)}
                     />
                     <br />
-                    <button type="submit">create</button>
+                    <button type="submit" id="create-button">create</button>
 
                 </div>
             </form>
